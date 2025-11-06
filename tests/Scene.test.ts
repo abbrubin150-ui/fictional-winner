@@ -2,7 +2,7 @@
  * Scene Unit Tests
  */
 
-import { Scene } from '../src/core/Scene';
+import { Scene } from '../Scene';
 
 describe('Scene', () => {
   describe('constructor', () => {

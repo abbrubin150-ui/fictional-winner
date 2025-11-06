@@ -7,6 +7,7 @@
 
 import { Scene, SceneData } from './Scene';
 import { Arc, ArcData } from './Arc';
+import { CoherenceSolver, CoherenceReport } from './CoherenceSolver';
 
 export interface GraphSnapshot {
   scenes: SceneData[];
@@ -276,7 +277,7 @@ export class GraphDB {
     const sceneCount = this.scenes.size;
     const arcCount = this.arcs.size;
     const totalCost = this.getTotalCost();
-    
+
     let totalScenes = 0;
     for (const arc of this.arcs.values()) {
       totalScenes += arc.scenes.length;
@@ -289,5 +290,33 @@ export class GraphDB {
       totalCost,
       avgScenePerArc,
     };
+  }
+
+  // ============ COHERENCE CHECKING ============
+
+  /**
+   * בדיקת קוהרנטיות הגרף
+   * מחזיר דוח מפורט על בעיות ואזהרות
+   */
+  checkCoherence(): CoherenceReport {
+    const solver = new CoherenceSolver();
+    return solver.checkCoherence(this);
+  }
+
+  /**
+   * האם הגרף קוהרנטי?
+   * @returns true אם אין שגיאות קריטיות
+   */
+  isCoherent(): boolean {
+    const report = this.checkCoherence();
+    return report.coherent;
+  }
+
+  /**
+   * קבלת רשימת בעיות בגרף
+   * @returns מערך של בעיות קוהרנטיות
+   */
+  getCoherenceIssues(): CoherenceReport {
+    return this.checkCoherence();
   }
 }
