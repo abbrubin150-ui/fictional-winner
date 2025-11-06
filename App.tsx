@@ -20,18 +20,30 @@ interface Arc {
   scenes: string[];
 }
 
+interface Character {
+  id: string;
+  name: string;
+  description: string;
+  role: string;
+  traits: string[];
+  scenePresence: string[];
+  relationships: any[];
+}
+
 const API_BASE = 'http://localhost:3000';
 
 export default function App() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [arcs, setArcs] = useState<Arc[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [stats, setStats] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'scenes' | 'arcs' | 'ledger'>('scenes');
+  const [activeTab, setActiveTab] = useState<'scenes' | 'arcs' | 'characters' | 'ledger'>('scenes');
 
   // טעינת נתונים
   useEffect(() => {
     loadScenes();
     loadArcs();
+    loadCharacters();
     loadStats();
   }, []);
 
@@ -52,6 +64,16 @@ export default function App() {
       setArcs(data);
     } catch (error) {
       console.error('Failed to load arcs:', error);
+    }
+  };
+
+  const loadCharacters = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/characters`);
+      const data = await res.json();
+      setCharacters(data);
+    } catch (error) {
+      console.error('Failed to load characters:', error);
     }
   };
 
@@ -117,6 +139,31 @@ export default function App() {
     }
   };
 
+  const createCharacter = async () => {
+    const name = prompt('Character Name:');
+    if (!name) return;
+
+    const description = prompt('Description:');
+    if (!description) return;
+
+    const role = prompt('Role (protagonist/antagonist/supporting/other):') || 'other';
+
+    try {
+      const res = await fetch(`${API_BASE}/character`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, description, role }),
+      });
+
+      if (res.ok) {
+        loadCharacters();
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Failed to create character:', error);
+    }
+  };
+
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <header style={{ marginBottom: '30px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>
@@ -130,12 +177,13 @@ export default function App() {
       {stats && (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: 'repeat(5, 1fr)',
           gap: '15px',
           marginBottom: '30px',
         }}>
           <StatCard label="סצנות" value={stats.sceneCount} />
           <StatCard label="Arcs" value={stats.arcCount} />
+          <StatCard label="דמויות" value={stats.characterCount || 0} />
           <StatCard label="עלות כוללת" value={stats.totalCost.toFixed(1)} />
           <StatCard label="ממוצע סצנות/Arc" value={stats.avgScenePerArc.toFixed(1)} />
         </div>
@@ -152,6 +200,11 @@ export default function App() {
           active={activeTab === 'arcs'}
           onClick={() => setActiveTab('arcs')}
           label="Arcs"
+        />
+        <TabButton
+          active={activeTab === 'characters'}
+          onClick={() => setActiveTab('characters')}
+          label="דמויות"
         />
         <TabButton
           active={activeTab === 'ledger'}
@@ -249,6 +302,79 @@ export default function App() {
                       <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
                         <strong>סצנות:</strong> {arc.scenes.length}
                       </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {activeTab === 'characters' && (
+        <div>
+          <Card>
+            <CardHeader title="דמויות" />
+            <CardContent>
+              <button
+                onClick={createCharacter}
+                style={{
+                  padding: '10px 20px',
+                  backgroundColor: '#9C27B0',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  marginBottom: '20px',
+                }}
+              >
+                ➕ הוסף דמות
+              </button>
+
+              {characters.length === 0 ? (
+                <p style={{ color: '#999' }}>אין דמויות עדיין</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0 }}>
+                  {characters.map((character) => (
+                    <li
+                      key={character.id}
+                      style={{
+                        padding: '15px',
+                        border: '1px solid #ddd',
+                        borderRadius: '5px',
+                        marginBottom: '10px',
+                        backgroundColor: '#f9f9f9',
+                      }}
+                    >
+                      <h3 style={{ margin: '0 0 10px 0' }}>
+                        {character.name}
+                        <span style={{
+                          marginLeft: '10px',
+                          fontSize: '0.7em',
+                          padding: '3px 8px',
+                          backgroundColor: '#9C27B0',
+                          color: 'white',
+                          borderRadius: '3px',
+                        }}>
+                          {character.role}
+                        </span>
+                      </h3>
+                      <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
+                        <strong>תיאור:</strong> {character.description}
+                      </p>
+                      {character.traits && character.traits.length > 0 && (
+                        <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
+                          <strong>תכונות:</strong> {character.traits.join(', ')}
+                        </p>
+                      )}
+                      <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
+                        <strong>סצנות:</strong> {character.scenePresence?.length || 0}
+                      </p>
+                      {character.relationships && character.relationships.length > 0 && (
+                        <p style={{ margin: '5px 0', color: '#666', fontSize: '0.9em' }}>
+                          <strong>קשרים:</strong> {character.relationships.length}
+                        </p>
+                      )}
                     </li>
                   ))}
                 </ul>

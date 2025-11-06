@@ -19,6 +19,7 @@ export interface SceneData {
   how: string;
   cost: number;
   links?: string[];
+  characterPresence?: string[]; // IDs of characters present in this scene
   metadata?: {
     createdAt: Date;
     updatedAt: Date;
@@ -35,6 +36,7 @@ export class Scene {
   how: string;
   cost: number;
   links: string[];
+  characterPresence: string[];
   metadata: {
     createdAt: Date;
     updatedAt: Date;
@@ -57,6 +59,7 @@ export class Scene {
     this.how = how;
     this.cost = cost;
     this.links = [];
+    this.characterPresence = [];
     this.metadata = {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -85,6 +88,34 @@ export class Scene {
   }
 
   /**
+   * הוספת דמות לסצנה
+   */
+  addCharacter(characterId: string): void {
+    if (!this.characterPresence.includes(characterId)) {
+      this.characterPresence.push(characterId);
+      this.metadata.updatedAt = new Date();
+    }
+  }
+
+  /**
+   * הסרת דמות מהסצנה
+   */
+  removeCharacter(characterId: string): void {
+    const index = this.characterPresence.indexOf(characterId);
+    if (index > -1) {
+      this.characterPresence.splice(index, 1);
+      this.metadata.updatedAt = new Date();
+    }
+  }
+
+  /**
+   * בדיקה אם דמות נמצאת בסצנה
+   */
+  hasCharacter(characterId: string): boolean {
+    return this.characterPresence.includes(characterId);
+  }
+
+  /**
    * עדכון תוכן הסצנה
    */
   update(updates: Partial<SceneData>): void {
@@ -94,7 +125,8 @@ export class Scene {
     if (updates.how) this.how = updates.how;
     if (updates.cost !== undefined) this.cost = updates.cost;
     if (updates.links) this.links = updates.links;
-    
+    if (updates.characterPresence) this.characterPresence = updates.characterPresence;
+
     this.metadata.updatedAt = new Date();
   }
 
@@ -135,6 +167,7 @@ export class Scene {
       how: this.how,
       cost: this.cost,
       links: this.links,
+      characterPresence: this.characterPresence,
       metadata: this.metadata,
     };
   }
@@ -151,9 +184,12 @@ export class Scene {
       data.how,
       data.cost
     );
-    
+
     if (data.links) {
       scene.links = data.links;
+    }
+    if (data.characterPresence) {
+      scene.characterPresence = data.characterPresence;
     }
     if (data.metadata) {
       scene.metadata = {

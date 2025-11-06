@@ -18,15 +18,17 @@ export interface CoherenceReport {
   stats: {
     scenesChecked: number;
     arcsChecked: number;
+    charactersChecked: number;
     linksChecked: number;
   };
 }
 
 export interface CoherenceIssue {
-  type: 'circular_dependency' | 'broken_link' | 'orphaned_scene' | 'timeline_conflict';
+  type: 'circular_dependency' | 'broken_link' | 'orphaned_scene' | 'timeline_conflict' | 'character_inconsistency';
   severity: 'error' | 'warning';
   message: string;
   affectedScenes: string[];
+  affectedCharacters?: string[];
 }
 
 export class CoherenceSolver {
@@ -50,6 +52,7 @@ export class CoherenceSolver {
 
     const scenes = graph.getAllScenes();
     const arcs = graph.getAllArcs();
+    const characters = graph.getAllCharacters();
 
     // 1. בדיקת תלויות מעגליות
     const cycles = this.detectCircularDependencies(graph);
@@ -85,6 +88,12 @@ export class CoherenceSolver {
       warnings.push(`Found ${emptyArcs.length} empty arcs: ${emptyArcs.map(a => a.id).join(', ')}`);
     }
 
+    // 5. בדיקת עקביות נוכחות דמויות
+    const characterIssues = this.detectCharacterInconsistencies(graph);
+    for (const issue of characterIssues) {
+      issues.push(issue);
+    }
+
     const coherent = issues.filter(i => i.severity === 'error').length === 0;
 
     return {
@@ -94,6 +103,7 @@ export class CoherenceSolver {
       stats: {
         scenesChecked: scenes.length,
         arcsChecked: arcs.length,
+        charactersChecked: characters.length,
         linksChecked: scenes.reduce((sum, s) => sum + s.links.length, 0),
       },
     };
@@ -205,6 +215,87 @@ export class CoherenceSolver {
     }
 
     return orphaned;
+  }
+
+  /**
+   * זיהוי בעיות עקביות בנוכחות דמויות
+   * בודק:
+   * - דמויות שמופיעות בסצנות שלא קיימות
+   * - סצנות עם דמויות שלא קיימות
+   * - חוסר התאמה בין Scene.characterPresence ל-Character.scenePresence
+   */
+  private detectCharacterInconsistencies(graph: GraphDB): CoherenceIssue[] {
+    const issues: CoherenceIssue[] = [];
+    const scenes = graph.getAllScenes();
+    const characters = graph.getAllCharacters();
+
+    // בדיקת כל דמות
+    for (const character of characters) {
+      for (const sceneId of character.scenePresence) {
+        const scene = graph.getScene(sceneId);
+        if (!scene) {
+          // דמות מופיעה בסצנה שלא קיימת
+          issues.push({
+            type: 'character_inconsistency',
+            severity: 'error',
+            message: `Character "${character.name}" (${character.id}) references non-existent scene "${sceneId}"`,
+            affectedScenes: [sceneId],
+            affectedCharacters: [character.id],
+          });
+        } else if (!scene.characterPresence.includes(character.id)) {
+          // חוסר התאמה: הדמות אומרת שהיא בסצנה אבל הסצנה לא מכירה בה
+          issues.push({
+            type: 'character_inconsistency',
+            severity: 'error',
+            message: `Bidirectional inconsistency: Character "${character.name}" lists scene "${sceneId}" but scene doesn't list character`,
+            affectedScenes: [sceneId],
+            affectedCharacters: [character.id],
+          });
+        }
+      }
+
+      // בדיקת קשרים עם דמויות אחרות
+      for (const relationship of character.relationships) {
+        const relatedCharacter = graph.getCharacter(relationship.characterId);
+        if (!relatedCharacter) {
+          issues.push({
+            type: 'character_inconsistency',
+            severity: 'error',
+            message: `Character "${character.name}" has relationship with non-existent character "${relationship.characterId}"`,
+            affectedScenes: [],
+            affectedCharacters: [character.id, relationship.characterId],
+          });
+        }
+      }
+    }
+
+    // בדיקת כל סצנה
+    for (const scene of scenes) {
+      for (const characterId of scene.characterPresence) {
+        const character = graph.getCharacter(characterId);
+        if (!character) {
+          // סצנה מכילה דמות שלא קיימת
+          issues.push({
+            type: 'character_inconsistency',
+            severity: 'error',
+            message: `Scene "${scene.id}" references non-existent character "${characterId}"`,
+            affectedScenes: [scene.id],
+            affectedCharacters: [characterId],
+          });
+        } else if (!character.scenePresence.includes(scene.id)) {
+          // חוסר התאמה: הסצנה אומרת שהדמות בה אבל הדמות לא מכירה בסצנה
+          issues.push({
+            type: 'character_inconsistency',
+            severity: 'error',
+            message: `Bidirectional inconsistency: Scene "${scene.id}" lists character "${character.name}" but character doesn't list scene`,
+            affectedScenes: [scene.id],
+            affectedCharacters: [characterId],
+          });
+        }
+      }
+    }
+
+    return issues;
   }
 
   /**

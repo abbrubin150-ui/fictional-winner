@@ -7,11 +7,13 @@
 
 import { Scene, SceneData } from './Scene';
 import { Arc, ArcData } from './Arc';
+import { Character, CharacterData } from './Character';
 import { CoherenceSolver, CoherenceReport } from './CoherenceSolver';
 
 export interface GraphSnapshot {
   scenes: SceneData[];
   arcs: ArcData[];
+  characters: CharacterData[];
   metadata: {
     version: string;
     timestamp: Date;
@@ -22,11 +24,13 @@ export interface GraphSnapshot {
 export class GraphDB {
   private scenes: Map<string, Scene>;
   private arcs: Map<string, Arc>;
+  private characters: Map<string, Character>;
   private version: string;
 
   constructor() {
     this.scenes = new Map();
     this.arcs = new Map();
+    this.characters = new Map();
     this.version = '2025.11.1';
   }
 
@@ -90,7 +94,7 @@ export class GraphDB {
 
   /**
    * מחיקת סצנה
-   * גם מסיר את הסצנה מכל ה-Arcs שמכילים אותה
+   * גם מסיר את הסצנה מכל ה-Arcs שמכילים אותה ומכל הדמויות
    */
   deleteScene(id: string): boolean {
     const scene = this.scenes.get(id);
@@ -101,6 +105,14 @@ export class GraphDB {
     // הסרה מכל ה-Arcs
     for (const arc of this.arcs.values()) {
       arc.removeScene(id);
+    }
+
+    // הסרה מכל הדמויות שמופיעות בסצנה
+    for (const characterId of scene.characterPresence) {
+      const character = this.characters.get(characterId);
+      if (character) {
+        character.removeScenePresence(id);
+      }
     }
 
     return this.scenes.delete(id);
@@ -177,6 +189,174 @@ export class GraphDB {
     arc.addScene(sceneId, position);
   }
 
+  // ============ CHARACTER OPERATIONS ============
+
+  /**
+   * יצירת דמות חדשה
+   */
+  createCharacter(data: Omit<CharacterData, 'id'>): Character {
+    const id = this.generateId('char');
+    const character = new Character(
+      id,
+      data.name,
+      data.description,
+      data.role
+    );
+
+    // Apply optional fields
+    if (data.traits) character.traits = data.traits;
+    if (data.relationships) character.relationships = data.relationships;
+    if (data.scenePresence) character.scenePresence = data.scenePresence;
+    if (data.arcData) character.arcData = data.arcData;
+
+    const validation = character.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid character: ${validation.errors.join(', ')}`);
+    }
+
+    this.characters.set(id, character);
+    return character;
+  }
+
+  /**
+   * שליפת דמות לפי ID
+   */
+  getCharacter(id: string): Character | undefined {
+    return this.characters.get(id);
+  }
+
+  /**
+   * שליפת כל הדמויות
+   */
+  getAllCharacters(): Character[] {
+    return Array.from(this.characters.values());
+  }
+
+  /**
+   * עדכון דמות
+   */
+  updateCharacter(id: string, updates: Partial<CharacterData>): Character {
+    const character = this.characters.get(id);
+    if (!character) {
+      throw new Error(`Character ${id} not found`);
+    }
+
+    character.update(updates);
+
+    const validation = character.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid character update: ${validation.errors.join(', ')}`);
+    }
+
+    return character;
+  }
+
+  /**
+   * מחיקת דמות
+   * גם מסיר את הדמות מכל הסצנות בהן היא מופיעה
+   */
+  deleteCharacter(id: string): boolean {
+    const character = this.characters.get(id);
+    if (!character) {
+      return false;
+    }
+
+    // הסרת הדמות מכל הסצנות
+    for (const sceneId of character.scenePresence) {
+      const scene = this.scenes.get(sceneId);
+      if (scene) {
+        scene.removeCharacter(id);
+      }
+    }
+
+    // הסרת כל הקשרים עם דמויות אחרות
+    for (const otherCharacter of this.characters.values()) {
+      otherCharacter.removeRelationship(id);
+    }
+
+    return this.characters.delete(id);
+  }
+
+  /**
+   * הוספת דמות לסצנה
+   */
+  addCharacterToScene(characterId: string, sceneId: string): void {
+    const character = this.characters.get(characterId);
+    if (!character) {
+      throw new Error(`Character ${characterId} not found`);
+    }
+
+    const scene = this.scenes.get(sceneId);
+    if (!scene) {
+      throw new Error(`Scene ${sceneId} not found`);
+    }
+
+    // Bidirectional relationship
+    character.addScenePresence(sceneId);
+    scene.addCharacter(characterId);
+  }
+
+  /**
+   * הסרת דמות מסצנה
+   */
+  removeCharacterFromScene(characterId: string, sceneId: string): void {
+    const character = this.characters.get(characterId);
+    if (!character) {
+      throw new Error(`Character ${characterId} not found`);
+    }
+
+    const scene = this.scenes.get(sceneId);
+    if (!scene) {
+      throw new Error(`Scene ${sceneId} not found`);
+    }
+
+    // Bidirectional relationship
+    character.removeScenePresence(sceneId);
+    scene.removeCharacter(characterId);
+  }
+
+  /**
+   * קבלת כל הדמויות בסצנה מסוימת
+   */
+  getCharactersInScene(sceneId: string): Character[] {
+    return Array.from(this.characters.values()).filter((char) =>
+      char.isInScene(sceneId)
+    );
+  }
+
+  /**
+   * קבלת כל הסצנות בהן דמות מסוימת מופיעה
+   */
+  getScenesWithCharacter(characterId: string): Scene[] {
+    const character = this.characters.get(characterId);
+    if (!character) return [];
+
+    return character.scenePresence
+      .map((sceneId) => this.scenes.get(sceneId))
+      .filter((s): s is Scene => s !== undefined);
+  }
+
+  /**
+   * יצירת קשר בין שתי דמויות
+   */
+  createRelationship(
+    characterId1: string,
+    characterId2: string,
+    relationship: { type: any; description?: string; strength: number }
+  ): void {
+    const char1 = this.characters.get(characterId1);
+    const char2 = this.characters.get(characterId2);
+
+    if (!char1 || !char2) {
+      throw new Error('Both characters must exist');
+    }
+
+    char1.addRelationship({
+      characterId: characterId2,
+      ...relationship,
+    });
+  }
+
   // ============ GRAPH ANALYSIS ============
 
   /**
@@ -219,6 +399,7 @@ export class GraphDB {
     return {
       scenes: Array.from(this.scenes.values()).map((s) => s.toJSON()),
       arcs: Array.from(this.arcs.values()).map((a) => a.toJSON()),
+      characters: Array.from(this.characters.values()).map((c) => c.toJSON()),
       metadata: {
         version: this.version,
         timestamp: new Date(),
@@ -232,6 +413,7 @@ export class GraphDB {
   loadSnapshot(snapshot: GraphSnapshot): void {
     this.scenes.clear();
     this.arcs.clear();
+    this.characters.clear();
 
     // טעינת סצנות
     for (const sceneData of snapshot.scenes) {
@@ -244,6 +426,14 @@ export class GraphDB {
       const arc = Arc.fromJSON(arcData);
       this.arcs.set(arc.id, arc);
     }
+
+    // טעינת דמויות
+    if (snapshot.characters) {
+      for (const characterData of snapshot.characters) {
+        const character = Character.fromJSON(characterData);
+        this.characters.set(character.id, character);
+      }
+    }
   }
 
   /**
@@ -252,6 +442,7 @@ export class GraphDB {
   clear(): void {
     this.scenes.clear();
     this.arcs.clear();
+    this.characters.clear();
   }
 
   // ============ UTILITIES ============
@@ -271,11 +462,13 @@ export class GraphDB {
   getStats(): {
     sceneCount: number;
     arcCount: number;
+    characterCount: number;
     totalCost: number;
     avgScenePerArc: number;
   } {
     const sceneCount = this.scenes.size;
     const arcCount = this.arcs.size;
+    const characterCount = this.characters.size;
     const totalCost = this.getTotalCost();
 
     let totalScenes = 0;
@@ -287,6 +480,7 @@ export class GraphDB {
     return {
       sceneCount,
       arcCount,
+      characterCount,
       totalCost,
       avgScenePerArc,
     };
