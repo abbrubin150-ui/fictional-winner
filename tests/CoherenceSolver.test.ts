@@ -4,8 +4,8 @@
  * Tests for circular dependency detection, broken links, and coherence checking
  */
 
-import { CoherenceSolver } from '../CoherenceSolver';
-import { GraphDB } from '../GraphDB';
+import { CoherenceSolver } from '../src/utils/CoherenceSolver';
+import { GraphDB } from '../src/core/GraphDB';
 
 describe('CoherenceSolver', () => {
   let solver: CoherenceSolver;

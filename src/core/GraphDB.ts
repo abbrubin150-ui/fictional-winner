@@ -8,7 +8,7 @@
 import { Scene, SceneData } from './Scene';
 import { Arc, ArcData } from './Arc';
 import { Character, CharacterData } from './Character';
-import { CoherenceSolver, CoherenceReport } from './CoherenceSolver';
+import { CoherenceSolver, CoherenceReport } from '../utils/CoherenceSolver';
 
 export interface GraphSnapshot {
   scenes: SceneData[];

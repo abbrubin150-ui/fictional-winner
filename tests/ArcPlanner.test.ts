@@ -2,9 +2,9 @@
  * Tests for ArcPlanner with A.R.I.D-5 Flow
  */
 
-import { ArcPlanner, ArcTemplate } from '../ArcPlanner';
-import { Arc } from '../Arc';
-import { GraphDB } from '../GraphDB';
+import { ArcPlanner, ArcTemplate } from '../src/managers/ArcPlanner';
+import { Arc } from '../src/core/Arc';
+import { GraphDB } from '../src/core/GraphDB';
 
 describe('ArcPlanner', () => {
   let planner: ArcPlanner;

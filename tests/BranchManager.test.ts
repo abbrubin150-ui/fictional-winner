@@ -4,8 +4,8 @@
  * Tests for branch creation, switching, merging, and conflict detection
  */
 
-import { BranchManager } from '../BranchManager';
-import { GraphDB } from '../GraphDB';
+import { BranchManager } from '../src/managers/BranchManager';
+import { GraphDB } from '../src/core/GraphDB';
 
 describe('BranchManager', () => {
   let branchManager: BranchManager;

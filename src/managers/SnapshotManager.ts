@@ -5,7 +5,7 @@
  * מאפשר rollback במקרה של שגיאה
  */
 
-import { GraphDB, GraphSnapshot } from './GraphDB';
+import { GraphDB, GraphSnapshot } from '../core/GraphDB';
 
 export interface SnapshotMetadata {
   id: string;

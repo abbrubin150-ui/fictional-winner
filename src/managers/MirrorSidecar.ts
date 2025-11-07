@@ -14,10 +14,10 @@
  * - ניטור real-time של drift
  */
 
-import { GraphDB } from './GraphDB';
-import { Scene } from './Scene';
-import { Arc } from './Arc';
-import { Character } from './Character';
+import { GraphDB } from '../core/GraphDB';
+import { Scene } from '../core/Scene';
+import { Arc } from '../core/Arc';
+import { Character } from '../core/Character';
 
 export interface MirrorDrift {
   branchA: string;

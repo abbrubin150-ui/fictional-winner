@@ -11,7 +11,7 @@
  * - ולידציה של רצף אירועים
  */
 
-import { GraphDB } from './GraphDB';
+import { GraphDB } from '../core/GraphDB';
 
 export type TimelineType = 'main' | 'flashback' | 'flash-forward' | 'alternate' | 'dream' | 'parallel';
 

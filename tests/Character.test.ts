@@ -2,7 +2,7 @@
  * Character Unit Tests
  */
 
-import { Character, CharacterRole, RelationType } from '../Character';
+import { Character, CharacterRole, RelationType } from '../src/core/Character';
 
 describe('Character', () => {
   describe('constructor', () => {

@@ -8,7 +8,7 @@
  * - הגנה על ה-main branch
  */
 
-import { GraphDB, GraphSnapshot } from './GraphDB';
+import { GraphDB, GraphSnapshot } from '../core/GraphDB';
 
 export interface Branch {
   name: string;

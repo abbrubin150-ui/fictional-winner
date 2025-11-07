@@ -4,8 +4,8 @@
  * Tests for automatic snapshots, rollback, and snapshot management
  */
 
-import { SnapshotManager } from '../SnapshotManager';
-import { GraphDB } from '../GraphDB';
+import { SnapshotManager } from '../src/managers/SnapshotManager';
+import { GraphDB } from '../src/core/GraphDB';
 
 describe('SnapshotManager', () => {
   let snapshotManager: SnapshotManager;
