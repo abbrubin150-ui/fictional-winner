@@ -18,8 +18,8 @@
  * - זיהוי חוסרים במבנה
  */
 
-import { Arc, AridFlow } from './Arc';
-import { GraphDB } from './GraphDB';
+import { Arc, AridFlow } from '../core/Arc';
+import { GraphDB } from '../core/GraphDB';
 
 export interface ArcTemplate {
   name: string;

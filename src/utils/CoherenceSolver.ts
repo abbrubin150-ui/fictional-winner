@@ -9,7 +9,7 @@
  * - וולידציה בסיסית של מבנה הגרף
  */
 
-import { GraphDB } from './GraphDB';
+import { GraphDB } from '../core/GraphDB';
 
 export interface CoherenceReport {
   coherent: boolean;

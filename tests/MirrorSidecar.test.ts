@@ -2,10 +2,10 @@
  * Tests for MirrorSidecar - Fixed version
  */
 
-import { MirrorSidecar } from '../MirrorSidecar';
-import { GraphDB } from '../GraphDB';
-import { Scene } from '../Scene';
-import { Character } from '../Character';
+import { MirrorSidecar } from '../src/managers/MirrorSidecar';
+import { GraphDB } from '../src/core/GraphDB';
+import { Scene } from '../src/core/Scene';
+import { Character } from '../src/core/Character';
 
 describe('MirrorSidecar', () => {
   let sidecar: MirrorSidecar;

@@ -8,8 +8,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { GraphDB } from '../core/GraphDB';
-import { DecisionLedger, DecisionType } from '../ledger/DecisionLedger';
+import { GraphDB } from './src/core/GraphDB';
+import { DecisionLedger, DecisionType } from './src/utils/DecisionLedger';
 
 const app = express();
 const PORT = process.env.PORT || 3000;

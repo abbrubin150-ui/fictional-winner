@@ -2,8 +2,8 @@
  * Tests for TimelineManager
  */
 
-import { TimelineManager, TimePoint } from '../TimelineManager';
-import { GraphDB } from '../GraphDB';
+import { TimelineManager, TimePoint } from '../src/managers/TimelineManager';
+import { GraphDB } from '../src/core/GraphDB';
 
 describe('TimelineManager', () => {
   let manager: TimelineManager;
