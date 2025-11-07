@@ -50,6 +50,14 @@ export class GraphDB {
       data.cost
     );
 
+    // Set optional fields if provided
+    if (data.links) {
+      scene.links = data.links;
+    }
+    if (data.characterPresence) {
+      scene.characterPresence = data.characterPresence;
+    }
+
     const validation = scene.validate();
     if (!validation.valid) {
       throw new Error(`Invalid scene: ${validation.errors.join(', ')}`);

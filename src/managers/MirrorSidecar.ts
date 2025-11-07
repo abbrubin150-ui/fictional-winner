@@ -320,12 +320,14 @@ export class MirrorSidecar {
     for (const diff of driftBefore.differences) {
       try {
         switch (diff.type) {
-          case 'scene_added':
+          case 'scene_removed':
+            // Scene exists in source but not in target -> add to target
             await this.syncSceneAddition(sourceGraph, targetGraph, diff, conflicts);
             changes.scenesAdded++;
             break;
 
-          case 'scene_removed':
+          case 'scene_added':
+            // Scene exists in target but not in source -> remove from target
             await this.syncSceneRemoval(sourceGraph, targetGraph, diff, conflicts);
             changes.scenesRemoved++;
             break;
