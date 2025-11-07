@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2025.11-Δ3] - 2025-11-07
+
+### 🐛 Fixed - Sprint 3 Bug Fixes
+
+#### MirrorSidecar
+- **Fixed scene synchronization logic**: Corrected inverted handling of scene_added/scene_removed diff types
+  - Scenes in source but not in target now correctly sync to target
+  - Drift reduction after synchronization now works as expected
+  - All 13 MirrorSidecar tests passing
+
+#### TimelineManager
+- **Fixed character presence detection**: GraphDB.createScene now properly sets characterPresence field
+  - Character presence data from scene creation now correctly stored
+  - Temporal validation can now detect characters in multiple scenes at same timestamp
+  - All 25 TimelineManager tests passing
+
+#### GraphDB
+- **Enhanced scene creation**: Added support for optional fields (links, characterPresence) in createScene
+  - Scene links now properly initialized from data parameter
+  - Character presence now properly initialized from data parameter
+
+### 📊 Testing
+- All 167 tests now passing (100% pass rate)
+- Sprint 3 fully functional and validated
+
+---
+
 ## [v2025.11-Δ1] - 2025-11-06
 
 ### ✨ Added - Sprint 1 Complete

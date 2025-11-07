@@ -1,9 +1,10 @@
 # PCS — Plot-Control System for Authors
 
-**Version:** v2025.11-Δ1  
-**Phase:** Development Sprint 1 → Implementation Core  
-**Owners:** Role Model a (moral witness), ∴Auditor (runtime)  
+**Version:** v2025.11-Δ3
+**Phase:** Sprint 3 Complete → Advanced Features Ready
+**Owners:** Role Model a (moral witness), ∴Auditor (runtime)
 **KPI יחיד:** ΔDIA_Rate≥0 (Stop-3)
+**Test Coverage:** 167 tests passing (100%)
 
 ## 📋 סקירה כללית
 
@@ -124,19 +125,31 @@ GET    /ledger        → שליפת יומן החלטות
 - **Stop-3:** עצירה אוטומטית בספי סיכון
 - **Witness:** עד מוסרי לכל החלטה קריטית
 
-## 📅 Sprint 2 — תכנון
+## 📅 Sprint 2 — ✅ הושלם
 
-1. ניתוח נורמטיבי (C11-C13) לשלב בכל Scene
-2. הוספת Branch Manager + Rollback Snapshots
-3. הרחבת UI ל-Arc Planner (A.R.I.D-5 Flow)
-4. שילוב Mirror Sidecar לבקרת Merge
+1. ✅ SAT Solver לקוהרנטיות נרטיבית
+2. ✅ Branch Manager + Rollback Snapshots
+3. ✅ הרחבת Arc Planner (A.R.I.D-5 Flow)
+4. ✅ Mirror Sidecar לבקרת Merge
 
-## 📜 מטרת הסיום של Sprint 1
+## 📅 Sprint 3 — ✅ הושלם
 
-✅ Graph יציב  
-✅ Ledger פעיל  
-✅ KPI=ΔDIA_Rate≥0  
+1. ✅ מערכת דמויות (Characters) מלאה
+2. ✅ Timeline Manager עם תמיכה ב-Flashbacks/Flash-forwards
+3. ✅ Mirror Sidecar עם סנכרון אוטומטי
+4. ✅ זיהוי פרדוקסים טמפורליים
+5. ✅ 167 בדיקות יחידה (100% עובר)
+
+## 📜 הישגי Sprint 1-3
+
+✅ Graph יציב עם תמיכה ב-Branches
+✅ Ledger פעיל
+✅ KPI=ΔDIA_Rate≥0
 ✅ Merge מאובטח עם Witness חתום
+✅ Character System מלא
+✅ Timeline Manager עם בדיקות עקביות
+✅ Mirror Sidecar לסנכרון ענפים
+✅ SAT Solver לקוהרנטיות
 
 ## 🤝 תרומה
 
