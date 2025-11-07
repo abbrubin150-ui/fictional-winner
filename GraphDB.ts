@@ -60,6 +60,22 @@ export class GraphDB {
   }
 
   /**
+   * הוספת סצנה קיימת לגרף
+   */
+  addScene(scene: Scene): void {
+    if (this.scenes.has(scene.id)) {
+      throw new Error(`Scene with id ${scene.id} already exists`);
+    }
+
+    const validation = scene.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid scene: ${validation.errors.join(', ')}`);
+    }
+
+    this.scenes.set(scene.id, scene);
+  }
+
+  /**
    * שליפת סצנה לפי ID
    */
   getScene(id: string): Scene | undefined {
@@ -128,6 +144,22 @@ export class GraphDB {
     const arc = new Arc(id, intent);
     this.arcs.set(id, arc);
     return arc;
+  }
+
+  /**
+   * הוספת Arc קיים לגרף
+   */
+  addArc(arc: Arc): void {
+    if (this.arcs.has(arc.id)) {
+      throw new Error(`Arc with id ${arc.id} already exists`);
+    }
+
+    const validation = arc.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid arc: ${validation.errors.join(', ')}`);
+    }
+
+    this.arcs.set(arc.id, arc);
   }
 
   /**
@@ -216,6 +248,22 @@ export class GraphDB {
 
     this.characters.set(id, character);
     return character;
+  }
+
+  /**
+   * הוספת דמות קיימת לגרף
+   */
+  addCharacter(character: Character): void {
+    if (this.characters.has(character.id)) {
+      throw new Error(`Character with id ${character.id} already exists`);
+    }
+
+    const validation = character.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid character: ${validation.errors.join(', ')}`);
+    }
+
+    this.characters.set(character.id, character);
   }
 
   /**
