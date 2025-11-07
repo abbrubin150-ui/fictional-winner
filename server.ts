@@ -281,6 +281,242 @@ app.delete('/arc/:id', (req: Request, res: Response) => {
   }
 });
 
+// ============ CHARACTER ENDPOINTS ============
+
+/**
+ * POST /character - Create new character
+ */
+app.post('/character', (req: Request, res: Response) => {
+  try {
+    const { name, description, role, traits, relationships, scenePresence, arcData } = req.body;
+
+    if (!name || !description) {
+      return res.status(400).json({
+        error: 'Missing required fields: name, description',
+      });
+    }
+
+    const character = graphDB.createCharacter({
+      name,
+      description,
+      role: role || 'other',
+      traits,
+      relationships,
+      scenePresence,
+      arcData,
+    });
+
+    ledger.recordDecision(
+      'EXECUTE',
+      `Created character: ${name}`,
+      '∴Auditor',
+      { action: 'character_create', characterId: character.id }
+    );
+
+    res.status(201).json(character.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /character/:id - Get character by ID
+ */
+app.get('/character/:id', (req: Request, res: Response) => {
+  try {
+    const character = graphDB.getCharacter(req.params.id);
+
+    if (!character) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    res.json(character.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /characters - Get all characters
+ */
+app.get('/characters', (req: Request, res: Response) => {
+  try {
+    const characters = graphDB.getAllCharacters();
+    res.json(characters.map((c) => c.toJSON()));
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * PUT /character/:id - Update character
+ */
+app.put('/character/:id', (req: Request, res: Response) => {
+  try {
+    const updates = req.body;
+    const character = graphDB.updateCharacter(req.params.id, updates);
+
+    ledger.recordDecision(
+      'EXECUTE',
+      `Updated character: ${character.name}`,
+      '∴Auditor',
+      { action: 'character_update', characterId: character.id }
+    );
+
+    res.json(character.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * DELETE /character/:id - Delete character
+ */
+app.delete('/character/:id', (req: Request, res: Response) => {
+  try {
+    const deleted = graphDB.deleteCharacter(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Character not found' });
+    }
+
+    ledger.recordDecision(
+      'EXECUTE',
+      `Deleted character: ${req.params.id}`,
+      '∴Auditor',
+      { action: 'character_delete', characterId: req.params.id }
+    );
+
+    res.json({ success: true, id: req.params.id });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /character/:id/scene - Add character to scene
+ */
+app.post('/character/:id/scene', (req: Request, res: Response) => {
+  try {
+    const { sceneId } = req.body;
+
+    if (!sceneId) {
+      return res.status(400).json({ error: 'Missing required field: sceneId' });
+    }
+
+    graphDB.addCharacterToScene(req.params.id, sceneId);
+
+    ledger.recordDecision(
+      'EXECUTE',
+      `Added character ${req.params.id} to scene ${sceneId}`,
+      '∴Auditor',
+      { action: 'character_add_to_scene', characterId: req.params.id, sceneId }
+    );
+
+    const character = graphDB.getCharacter(req.params.id);
+    res.json(character?.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * DELETE /character/:id/scene/:sceneId - Remove character from scene
+ */
+app.delete('/character/:id/scene/:sceneId', (req: Request, res: Response) => {
+  try {
+    graphDB.removeCharacterFromScene(req.params.id, req.params.sceneId);
+
+    ledger.recordDecision(
+      'EXECUTE',
+      `Removed character ${req.params.id} from scene ${req.params.sceneId}`,
+      '∴Auditor',
+      { action: 'character_remove_from_scene', characterId: req.params.id, sceneId: req.params.sceneId }
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /character/:id/scenes - Get all scenes with character
+ */
+app.get('/character/:id/scenes', (req: Request, res: Response) => {
+  try {
+    const scenes = graphDB.getScenesWithCharacter(req.params.id);
+    res.json(scenes.map((s) => s.toJSON()));
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /scene/:id/characters - Get all characters in scene
+ */
+app.get('/scene/:id/characters', (req: Request, res: Response) => {
+  try {
+    const characters = graphDB.getCharactersInScene(req.params.id);
+    res.json(characters.map((c) => c.toJSON()));
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /character/:id/relationship - Create relationship between characters
+ */
+app.post('/character/:id/relationship', (req: Request, res: Response) => {
+  try {
+    const { characterId, type, description, strength } = req.body;
+
+    if (!characterId || !type || strength === undefined) {
+      return res.status(400).json({
+        error: 'Missing required fields: characterId, type, strength',
+      });
+    }
+
+    graphDB.createRelationship(req.params.id, characterId, {
+      type,
+      description,
+      strength,
+    });
+
+    ledger.recordDecision(
+      'EXECUTE',
+      `Created relationship between ${req.params.id} and ${characterId}`,
+      '∴Auditor',
+      { action: 'relationship_create', characterId1: req.params.id, characterId2: characterId }
+    );
+
+    const character = graphDB.getCharacter(req.params.id);
+    res.json(character?.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 // ============ LEDGER ENDPOINTS ============
 
 /**

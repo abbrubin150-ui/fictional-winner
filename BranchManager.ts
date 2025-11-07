@@ -56,6 +56,7 @@ export class BranchManager {
       snapshot: {
         scenes: [],
         arcs: [],
+        characters: [],
         metadata: {
           version: '2025.11.1',
           timestamp: new Date(),
@@ -164,10 +165,11 @@ export class BranchManager {
       };
     }
 
-    // מיזוג פשוט - העתקת כל הסצנות וה-Arcs מה-source
+    // מיזוג פשוט - העתקת כל הסצנות, הדמויות וה-Arcs מה-source
     const mergedSnapshot: GraphSnapshot = {
       scenes: [...sourceBranch.snapshot.scenes],
       arcs: [...sourceBranch.snapshot.arcs],
+      characters: [...sourceBranch.snapshot.characters],
       metadata: {
         version: targetBranch.snapshot.metadata.version,
         timestamp: new Date(),
