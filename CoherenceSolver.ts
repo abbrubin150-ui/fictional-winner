@@ -299,15 +299,20 @@ export class CoherenceSolver {
   }
 
   /**
-   * בדיקת עקביות זמנים (placeholder לעתיד)
-   * כרגע מחזיר true תמיד, יורחב ב-Sprint 3 עם Timeline Manager
+   * בדיקת עקביות זמנים עם Timeline Manager
+   * מבצע בדיקה מלאה של קוהרנטיות טמפורלית
    */
-  validateTimeline(_graph: GraphDB): boolean {
-    // TODO Sprint 3: Implement timeline consistency checking
-    // - Check for temporal paradoxes
-    // - Validate flashback/flash-forward sequences
-    // - Ensure character presence consistency
-    return true;
+  validateTimeline(graph: GraphDB, timelineManager?: any): boolean {
+    // If no timeline manager provided, skip timeline validation
+    if (!timelineManager) {
+      return true;
+    }
+
+    // Use TimelineManager to validate temporal consistency
+    const report = timelineManager.validateTemporalConsistency(graph);
+
+    // Return true only if there are no temporal errors
+    return report.consistent;
   }
 
   /**
