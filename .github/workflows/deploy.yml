@@ -142,15 +142,25 @@ jobs:
     steps:
     - name: Deployment Status
       run: |
-        if [ "${{ needs.build-and-test.result }}" == "success" ] && [ "${{ needs.deploy-github-pages.result }}" == "success" ]; then
+        BUILD_RESULT="${{ needs.build-and-test.result }}"
+        DEPLOY_RESULT="${{ needs.deploy-github-pages.result }}"
+
+        echo "Build result: $BUILD_RESULT"
+        echo "Deploy result: $DEPLOY_RESULT"
+
+        if [ "$BUILD_RESULT" == "success" ] && [ "$DEPLOY_RESULT" == "success" ]; then
           echo "✅ Deployment successful!"
           echo "🎉 PCS deployed successfully to GitHub Pages"
-        elif [ "${{ needs.build-and-test.result }}" == "failure" ]; then
+        elif [ "$BUILD_RESULT" == "failure" ]; then
           echo "❌ Build or tests failed"
           exit 1
-        elif [ "${{ needs.deploy-github-pages.result }}" == "failure" ]; then
+        elif [ "$DEPLOY_RESULT" == "failure" ]; then
           echo "❌ Deployment failed"
           exit 1
+        elif [ "$DEPLOY_RESULT" == "skipped" ]; then
+          echo "⏭️ Deployment skipped (not on main branch)"
+          exit 0
         else
           echo "⏭️ Deployment skipped or cancelled"
+          exit 0
         fi
