@@ -10,6 +10,8 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { GraphDB } from './src/core/GraphDB';
 import { DecisionLedger, DecisionType } from './src/utils/DecisionLedger';
+import { ArtifactManager } from './src/managers/ArtifactManager';
+import { ArtifactType, ArtifactFormat } from './src/core/Artifact';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +23,7 @@ app.use(bodyParser.json());
 // Initialize core systems
 const graphDB = new GraphDB();
 const ledger = new DecisionLedger();
+const artifactManager = new ArtifactManager(graphDB);
 
 // Record initialization
 ledger.recordDecision(
@@ -635,6 +638,417 @@ app.get('/graph/snapshot', (req: Request, res: Response) => {
   }
 });
 
+// ============ ARTIFACT ENDPOINTS ============
+
+/**
+ * POST /artifact - Create new artifact
+ */
+app.post('/artifact', async (req: Request, res: Response) => {
+  try {
+    const { name, type, format, source, settings } = req.body;
+
+    if (!name || !type || !format || !source) {
+      return res.status(400).json({
+        error: 'Missing required fields: name, type, format, source',
+      });
+    }
+
+    const result = await artifactManager.createArtifact(
+      name,
+      type as ArtifactType,
+      format as ArtifactFormat,
+      source,
+      settings
+    );
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Created artifact: ${name} (${type})`,
+      '∴Auditor',
+      { action: 'artifact_create', artifactId: result.artifact.id }
+    );
+
+    res.status(201).json({
+      artifact: result.artifact.toJSON(),
+      stats: result.stats,
+      warnings: result.warnings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /artifact/template - Create artifact from template
+ */
+app.post('/artifact/template', async (req: Request, res: Response) => {
+  try {
+    const { templateId, name, source, settings } = req.body;
+
+    if (!templateId || !name || !source) {
+      return res.status(400).json({
+        error: 'Missing required fields: templateId, name, source',
+      });
+    }
+
+    const result = await artifactManager.createFromTemplate(
+      templateId,
+      name,
+      source,
+      settings
+    );
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Created artifact from template: ${templateId}`,
+      '∴Auditor',
+      { action: 'artifact_create_template', artifactId: result.artifact.id }
+    );
+
+    res.status(201).json({
+      artifact: result.artifact.toJSON(),
+      stats: result.stats,
+      warnings: result.warnings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /artifact/:id - Get artifact by ID
+ */
+app.get('/artifact/:id', (req: Request, res: Response) => {
+  try {
+    const artifact = artifactManager.getArtifact(req.params.id);
+
+    if (!artifact) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+
+    res.json(artifact.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /artifacts - Get all artifacts (with optional filtering)
+ */
+app.get('/artifacts', (req: Request, res: Response) => {
+  try {
+    const { type, format, status, tags, search } = req.query;
+
+    let artifacts = artifactManager.getAllArtifacts();
+
+    // Apply filters if provided
+    if (type || format || status || tags || search) {
+      const filter: any = {};
+      if (type) filter.type = type;
+      if (format) filter.format = format;
+      if (status) filter.status = status;
+      if (tags) filter.tags = (tags as string).split(',');
+      if (search) filter.searchTerm = search;
+
+      artifacts = artifactManager.filterArtifacts(filter);
+    }
+
+    res.json(artifacts.map((a) => a.toJSON()));
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * PUT /artifact/:id - Update artifact
+ */
+app.put('/artifact/:id', (req: Request, res: Response) => {
+  try {
+    const { name, description, content, format, settings, metadata } = req.body;
+
+    const updates: any = {};
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    if (content !== undefined) updates.content = content;
+    if (format !== undefined) updates.format = format;
+    if (settings !== undefined) updates.settings = settings;
+
+    const success = artifactManager.updateArtifact(req.params.id, updates);
+
+    if (!success) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+
+    // Update metadata separately if provided
+    if (metadata) {
+      const artifact = artifactManager.getArtifact(req.params.id);
+      if (artifact) {
+        artifact.updateMetadata(metadata);
+      }
+    }
+
+    const artifact = artifactManager.getArtifact(req.params.id);
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Updated artifact: ${artifact?.name}`,
+      '∴Auditor',
+      { action: 'artifact_update', artifactId: req.params.id }
+    );
+
+    res.json(artifact?.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * DELETE /artifact/:id - Delete artifact
+ */
+app.delete('/artifact/:id', (req: Request, res: Response) => {
+  try {
+    const artifact = artifactManager.getArtifact(req.params.id);
+
+    if (!artifact) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+
+    const success = artifactManager.deleteArtifact(req.params.id);
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Deleted artifact: ${artifact.name}`,
+      '∴Auditor',
+      { action: 'artifact_delete', artifactId: req.params.id }
+    );
+
+    res.json({ success, artifact: artifact.toJSON() });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /artifact/:id/regenerate - Regenerate artifact with latest data
+ */
+app.post('/artifact/:id/regenerate', async (req: Request, res: Response) => {
+  try {
+    const result = await artifactManager.regenerateArtifact(req.params.id);
+
+    if (!result) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Regenerated artifact: ${result.artifact.name}`,
+      '∴Auditor',
+      { action: 'artifact_regenerate', artifactId: req.params.id }
+    );
+
+    res.json({
+      artifact: result.artifact.toJSON(),
+      stats: result.stats,
+      warnings: result.warnings,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /artifacts/regenerate-all - Regenerate all artifacts
+ */
+app.post('/artifacts/regenerate-all', async (req: Request, res: Response) => {
+  try {
+    const results = await artifactManager.regenerateAll();
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Regenerated ${results.size} artifacts`,
+      '∴Auditor',
+      { action: 'artifacts_regenerate_all' }
+    );
+
+    const resultsArray = Array.from(results.entries()).map(([id, result]) => ({
+      id,
+      artifact: result.artifact.toJSON(),
+      stats: result.stats,
+      warnings: result.warnings,
+    }));
+
+    res.json({
+      count: results.size,
+      results: resultsArray,
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /artifact/:id/export - Export artifact in specific format
+ */
+app.get('/artifact/:id/export', async (req: Request, res: Response) => {
+  try {
+    const { format } = req.query;
+
+    if (!format) {
+      return res.status(400).json({ error: 'Missing format parameter' });
+    }
+
+    const result = await artifactManager.exportArtifact(
+      req.params.id,
+      format as ArtifactFormat
+    );
+
+    if (!result) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+
+    // Set appropriate content type
+    let contentType = 'text/plain';
+    if (result.format === ArtifactFormat.HTML) contentType = 'text/html';
+    else if (result.format === ArtifactFormat.JSON) contentType = 'application/json';
+    else if (result.format === ArtifactFormat.MARKDOWN) contentType = 'text/markdown';
+
+    res.setHeader('Content-Type', contentType);
+    res.send(result.content);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /artifact/stats - Get artifact statistics
+ */
+app.get('/artifact/stats', (req: Request, res: Response) => {
+  try {
+    const stats = artifactManager.getStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /templates - Get all artifact templates
+ */
+app.get('/templates', (req: Request, res: Response) => {
+  try {
+    const templates = artifactManager.getAllTemplates();
+    res.json(templates);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * GET /template/:id - Get template by ID
+ */
+app.get('/template/:id', (req: Request, res: Response) => {
+  try {
+    const template = artifactManager.getTemplate(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    res.json(template);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /template - Add custom template
+ */
+app.post('/template', (req: Request, res: Response) => {
+  try {
+    const template = req.body;
+
+    if (!template.id || !template.name || !template.type || !template.format) {
+      return res.status(400).json({
+        error: 'Missing required fields: id, name, type, format',
+      });
+    }
+
+    artifactManager.addTemplate(template);
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Added artifact template: ${template.name}`,
+      '∴Auditor',
+      { action: 'template_add', templateId: template.id }
+    );
+
+    res.status(201).json(template);
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /artifact/:id/clone - Clone artifact
+ */
+app.post('/artifact/:id/clone', (req: Request, res: Response) => {
+  try {
+    const { newName } = req.body;
+    const cloned = artifactManager.cloneArtifact(req.params.id, newName);
+
+    if (!cloned) {
+      return res.status(404).json({ error: 'Artifact not found' });
+    }
+
+    // Record decision
+    ledger.recordDecision(
+      'EXECUTE',
+      `Cloned artifact: ${cloned.name}`,
+      '∴Auditor',
+      { action: 'artifact_clone', sourceId: req.params.id, cloneId: cloned.id }
+    );
+
+    res.status(201).json(cloned.toJSON());
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
 // ============ START SERVER ============
 
 app.listen(PORT, () => {
@@ -642,7 +1056,8 @@ app.listen(PORT, () => {
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`📖 GraphDB initialized`);
   console.log(`📝 Decision Ledger active`);
-  console.log(`\n✅ Sprint 1 - Core Implementation Ready`);
+  console.log(`🎨 Artifact Manager ready`);
+  console.log(`\n✅ Sprint 1-4 - Core + Artifact System Ready`);
 });
 
 export default app;

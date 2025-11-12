@@ -8,6 +8,7 @@
 export { Scene, SceneData } from './core/Scene';
 export { Arc, ArcData } from './core/Arc';
 export { Character, CharacterData, CharacterRole, CharacterArc, Relationship, RelationType } from './core/Character';
+export { Artifact, ArtifactData, ArtifactType, ArtifactFormat, ArtifactSource, GenerationSettings, ArtifactMetadata } from './core/Artifact';
 export { GraphDB, GraphSnapshot } from './core/GraphDB';
 
 // Managers
@@ -16,6 +17,8 @@ export { SnapshotManager, SnapshotMetadata, StoredSnapshot } from './managers/Sn
 export { TimelineManager, TimelineType, TimePoint, Timeline, TemporalIssue, TemporalReport } from './managers/TimelineManager';
 export { ArcPlanner, ArcTemplate, ArcAnalysis } from './managers/ArcPlanner';
 export { MirrorSidecar, MirrorDrift, DriftDifference, MirrorConflict, SyncReport, MirrorConfig } from './managers/MirrorSidecar';
+export { ArtifactManager, ArtifactTemplate, ArtifactFilter, ArtifactStats } from './managers/ArtifactManager';
+export { ArtifactGenerator, GenerationResult } from './managers/ArtifactGenerator';
 
 // Utils
 export { CoherenceSolver, CoherenceReport, CoherenceIssue } from './utils/CoherenceSolver';

@@ -8,12 +8,14 @@
 import { Scene, SceneData } from './Scene';
 import { Arc, ArcData } from './Arc';
 import { Character, CharacterData } from './Character';
+import { Artifact, ArtifactData } from './Artifact';
 import { CoherenceSolver, CoherenceReport } from '../utils/CoherenceSolver';
 
 export interface GraphSnapshot {
   scenes: SceneData[];
   arcs: ArcData[];
   characters: CharacterData[];
+  artifacts?: ArtifactData[];
   metadata: {
     version: string;
     timestamp: Date;
@@ -25,12 +27,14 @@ export class GraphDB {
   private scenes: Map<string, Scene>;
   private arcs: Map<string, Arc>;
   private characters: Map<string, Character>;
+  private artifacts: Map<string, Artifact>;
   private version: string;
 
   constructor() {
     this.scenes = new Map();
     this.arcs = new Map();
     this.characters = new Map();
+    this.artifacts = new Map();
     this.version = '2025.11.1';
   }
 
@@ -413,6 +417,133 @@ export class GraphDB {
     });
   }
 
+  // ============ ARTIFACT OPERATIONS ============
+
+  /**
+   * הוספת Artifact קיים לגרף
+   */
+  addArtifact(artifact: Artifact): void {
+    if (this.artifacts.has(artifact.id)) {
+      throw new Error(`Artifact with id ${artifact.id} already exists`);
+    }
+
+    const validation = artifact.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid artifact: ${validation.errors.join(', ')}`);
+    }
+
+    this.artifacts.set(artifact.id, artifact);
+  }
+
+  /**
+   * שליפת Artifact לפי ID
+   */
+  getArtifact(id: string): Artifact | undefined {
+    return this.artifacts.get(id);
+  }
+
+  /**
+   * שליפת כל ה-Artifacts
+   */
+  getAllArtifacts(): Artifact[] {
+    return Array.from(this.artifacts.values());
+  }
+
+  /**
+   * עדכון Artifact
+   */
+  updateArtifact(id: string, updates: Partial<Omit<Artifact, 'id' | 'metadata'>>): Artifact {
+    const artifact = this.artifacts.get(id);
+    if (!artifact) {
+      throw new Error(`Artifact ${id} not found`);
+    }
+
+    artifact.update(updates);
+
+    const validation = artifact.validate();
+    if (!validation.valid) {
+      throw new Error(`Invalid artifact update: ${validation.errors.join(', ')}`);
+    }
+
+    return artifact;
+  }
+
+  /**
+   * מחיקת Artifact
+   */
+  deleteArtifact(id: string): boolean {
+    return this.artifacts.delete(id);
+  }
+
+  /**
+   * מחיקת כל ה-Artifacts הקשורים לסצנה מסוימת
+   */
+  deleteArtifactsContainingScene(sceneId: string): number {
+    let deletedCount = 0;
+    for (const [id, artifact] of this.artifacts.entries()) {
+      if (artifact.source.sceneIds?.includes(sceneId)) {
+        this.artifacts.delete(id);
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  }
+
+  /**
+   * מחיקת כל ה-Artifacts הקשורים ל-Arc מסוים
+   */
+  deleteArtifactsContainingArc(arcId: string): number {
+    let deletedCount = 0;
+    for (const [id, artifact] of this.artifacts.entries()) {
+      if (artifact.source.arcIds?.includes(arcId)) {
+        this.artifacts.delete(id);
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  }
+
+  /**
+   * מחיקת כל ה-Artifacts הקשורים לדמות מסוימת
+   */
+  deleteArtifactsContainingCharacter(characterId: string): number {
+    let deletedCount = 0;
+    for (const [id, artifact] of this.artifacts.entries()) {
+      if (artifact.source.characterIds?.includes(characterId)) {
+        this.artifacts.delete(id);
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  }
+
+  /**
+   * שליפת כל ה-Artifacts שמכילים סצנה מסוימת
+   */
+  getArtifactsContainingScene(sceneId: string): Artifact[] {
+    return Array.from(this.artifacts.values()).filter((artifact) =>
+      artifact.source.sceneIds?.includes(sceneId)
+    );
+  }
+
+  /**
+   * שליפת כל ה-Artifacts שמכילים Arc מסוים
+   */
+  getArtifactsContainingArc(arcId: string): Artifact[] {
+    return Array.from(this.artifacts.values()).filter((artifact) =>
+      artifact.source.arcIds?.includes(arcId)
+    );
+  }
+
+  /**
+   * שליפת כל ה-Artifacts שמכילים דמות מסוימת
+   */
+  getArtifactsContainingCharacter(characterId: string): Artifact[] {
+    return Array.from(this.artifacts.values()).filter((artifact) =>
+      artifact.source.characterIds?.includes(characterId)
+    );
+  }
+
   // ============ GRAPH ANALYSIS ============
 
   /**
@@ -456,6 +587,7 @@ export class GraphDB {
       scenes: Array.from(this.scenes.values()).map((s) => s.toJSON()),
       arcs: Array.from(this.arcs.values()).map((a) => a.toJSON()),
       characters: Array.from(this.characters.values()).map((c) => c.toJSON()),
+      artifacts: Array.from(this.artifacts.values()).map((a) => a.toJSON()),
       metadata: {
         version: this.version,
         timestamp: new Date(),
@@ -470,6 +602,7 @@ export class GraphDB {
     this.scenes.clear();
     this.arcs.clear();
     this.characters.clear();
+    this.artifacts.clear();
 
     // טעינת סצנות
     for (const sceneData of snapshot.scenes) {
@@ -490,6 +623,14 @@ export class GraphDB {
         this.characters.set(character.id, character);
       }
     }
+
+    // טעינת Artifacts
+    if (snapshot.artifacts) {
+      for (const artifactData of snapshot.artifacts) {
+        const artifact = Artifact.fromJSON(artifactData);
+        this.artifacts.set(artifact.id, artifact);
+      }
+    }
   }
 
   /**
@@ -499,6 +640,7 @@ export class GraphDB {
     this.scenes.clear();
     this.arcs.clear();
     this.characters.clear();
+    this.artifacts.clear();
   }
 
   // ============ UTILITIES ============
@@ -519,12 +661,14 @@ export class GraphDB {
     sceneCount: number;
     arcCount: number;
     characterCount: number;
+    artifactCount: number;
     totalCost: number;
     avgScenePerArc: number;
   } {
     const sceneCount = this.scenes.size;
     const arcCount = this.arcs.size;
     const characterCount = this.characters.size;
+    const artifactCount = this.artifacts.size;
     const totalCost = this.getTotalCost();
 
     let totalScenes = 0;
@@ -537,6 +681,7 @@ export class GraphDB {
       sceneCount,
       arcCount,
       characterCount,
+      artifactCount,
       totalCost,
       avgScenePerArc,
     };
