@@ -38,7 +38,8 @@ interface Stats {
   avgScenePerArc: number;
 }
 
-const API_BASE = 'http://localhost:3000';
+// Get API URL from environment variables or use default
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function App() {
   const [scenes, setScenes] = useState<Scene[]>([]);
@@ -46,8 +47,10 @@ export default function App() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [activeTab, setActiveTab] = useState<'scenes' | 'arcs' | 'characters' | 'ledger'>('scenes');
+  const [apiAvailable, setApiAvailable] = useState(!!API_BASE);
 
   const loadScenes = useCallback(async () => {
+    if (!API_BASE) return;
     try {
       const res = await fetch(`${API_BASE}/scenes`);
       const data = await res.json();
@@ -58,6 +61,7 @@ export default function App() {
   }, []);
 
   const loadArcs = useCallback(async () => {
+    if (!API_BASE) return;
     try {
       const res = await fetch(`${API_BASE}/arcs`);
       const data = await res.json();
@@ -68,6 +72,7 @@ export default function App() {
   }, []);
 
   const loadCharacters = useCallback(async () => {
+    if (!API_BASE) return;
     try {
       const res = await fetch(`${API_BASE}/characters`);
       const data = await res.json();
@@ -78,6 +83,7 @@ export default function App() {
   }, []);
 
   const loadStats = useCallback(async () => {
+    if (!API_BASE) return;
     try {
       const res = await fetch(`${API_BASE}/graph/stats`);
       const data = await res.json();
@@ -96,6 +102,10 @@ export default function App() {
   }, [loadScenes, loadArcs, loadCharacters, loadStats]);
 
   const createScene = async () => {
+    if (!apiAvailable) {
+      alert('API server is not available. Please start the backend server.');
+      return;
+    }
     const title = prompt('כותרת הסצנה:');
     if (!title) return;
 
@@ -128,6 +138,10 @@ export default function App() {
   };
 
   const createArc = async () => {
+    if (!apiAvailable) {
+      alert('API server is not available. Please start the backend server.');
+      return;
+    }
     const intent = prompt('Intent (כוונת ה-Arc):');
     if (!intent) return;
 
@@ -148,6 +162,10 @@ export default function App() {
   };
 
   const createCharacter = async () => {
+    if (!apiAvailable) {
+      alert('API server is not available. Please start the backend server.');
+      return;
+    }
     const name = prompt('Character Name:');
     if (!name) return;
 
@@ -174,6 +192,21 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: 'system-ui, sans-serif', padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {!apiAvailable && (
+        <div style={{
+          backgroundColor: '#fff3cd',
+          border: '1px solid #ffc107',
+          borderRadius: '5px',
+          padding: '15px',
+          marginBottom: '20px',
+          color: '#856404',
+        }}>
+          <strong>⚠️ API Server Not Connected</strong>
+          <p style={{ margin: '5px 0 0 0', fontSize: '0.9em' }}>
+            The backend API server is not available. To use all features, please start the backend server or configure a remote API URL.
+          </p>
+        </div>
+      )}
       <header style={{ marginBottom: '30px', borderBottom: '2px solid #333', paddingBottom: '20px' }}>
         <h1 style={{ margin: 0, fontSize: '2.5em' }}>📖 PCS — Plot Control System</h1>
         <p style={{ color: '#666', margin: '10px 0 0 0' }}>
