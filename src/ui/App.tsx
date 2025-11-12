@@ -3,7 +3,7 @@
  * React UI for Plot Control System
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface Scene {
   id: string;
@@ -27,7 +27,7 @@ interface Character {
   role: string;
   traits: string[];
   scenePresence: string[];
-  relationships: any[];
+  relationships: Record<string, unknown>[];
 }
 
 const API_BASE = 'http://localhost:3000';
@@ -36,18 +36,10 @@ export default function App() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [arcs, setArcs] = useState<Arc[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<Record<string, unknown> | null>(null);
   const [activeTab, setActiveTab] = useState<'scenes' | 'arcs' | 'characters' | 'ledger'>('scenes');
 
-  // טעינת נתונים
-  useEffect(() => {
-    loadScenes();
-    loadArcs();
-    loadCharacters();
-    loadStats();
-  }, []);
-
-  const loadScenes = async () => {
+  const loadScenes = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/scenes`);
       const data = await res.json();
@@ -55,9 +47,9 @@ export default function App() {
     } catch (error) {
       console.error('Failed to load scenes:', error);
     }
-  };
+  }, []);
 
-  const loadArcs = async () => {
+  const loadArcs = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/arcs`);
       const data = await res.json();
@@ -65,9 +57,9 @@ export default function App() {
     } catch (error) {
       console.error('Failed to load arcs:', error);
     }
-  };
+  }, []);
 
-  const loadCharacters = async () => {
+  const loadCharacters = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/characters`);
       const data = await res.json();
@@ -75,9 +67,9 @@ export default function App() {
     } catch (error) {
       console.error('Failed to load characters:', error);
     }
-  };
+  }, []);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/graph/stats`);
       const data = await res.json();
@@ -85,7 +77,15 @@ export default function App() {
     } catch (error) {
       console.error('Failed to load stats:', error);
     }
-  };
+  }, []);
+
+  // טעינת נתונים
+  useEffect(() => {
+    loadScenes();
+    loadArcs();
+    loadCharacters();
+    loadStats();
+  }, [loadScenes, loadArcs, loadCharacters, loadStats]);
 
   const createScene = async () => {
     const title = prompt('כותרת הסצנה:');
