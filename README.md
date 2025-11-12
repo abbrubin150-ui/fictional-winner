@@ -1,5 +1,9 @@
 # PCS — Plot-Control System for Authors
 
+[![CI Pipeline](https://github.com/abbrubin150-ui/fictional-winner/actions/workflows/ci.yml/badge.svg)](https://github.com/abbrubin150-ui/fictional-winner/actions/workflows/ci.yml)
+[![Deploy](https://github.com/abbrubin150-ui/fictional-winner/actions/workflows/deploy.yml/badge.svg)](https://github.com/abbrubin150-ui/fictional-winner/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Version:** v2025.11-Δ3
 **Phase:** Sprint 3 Complete → Advanced Features Ready
 **Owners:** Role Model a (moral witness), ∴Auditor (runtime)
@@ -55,6 +59,38 @@ npm run dev
 
 # Run tests
 npm test
+
+# Build for production
+npm run build
+```
+
+## 🌐 Deployment
+
+המערכת כוללת CI/CD pipeline מלא עם GitHub Actions:
+
+### פריסה אוטומטית
+- **GitHub Pages:** Deploy אוטומטי על push ל-main
+- **Preview Deployments:** Build אוטומטי על כל PR
+- **Release Management:** יצירת releases אוטומטית עם tags
+
+### פלטפורמות נתמכות
+- 🌐 GitHub Pages (מוגדר כברירת מחדל)
+- 📦 Netlify
+- ▲ Vercel
+- ☁️ AWS S3 + CloudFront
+- 🐳 Docker + Docker Hub
+
+### מדריך פריסה מלא
+ראה **[DEPLOYMENT.md](./DEPLOYMENT.md)** להוראות מפורטות לכל פלטפורמה.
+
+### Quick Deploy
+```bash
+# Docker
+docker-compose up -d
+
+# מקומי (production mode)
+npm run build
+NODE_ENV=production npm start
 ```
 
 ## 📊 תשתיות ליבה

@@ -295,9 +295,9 @@ export class ArcPlanner {
     // Set five-beat if we have enough scenes
     if (totalScenes >= 5) {
       const beat1 = arc.scenes[0]; // Opening
-      const beat2 = arc.scenes[Math.floor(totalScenes * 0.15)]; // Inciting incident (~15%)
+      const beat2 = arc.scenes[Math.floor(totalScenes * 0.15)]; // Inciting incident at 15%
       const beat3 = arc.scenes[Math.floor(totalScenes * 0.5)]; // Midpoint
-      const beat4 = arc.scenes[Math.floor(totalScenes * 0.75)]; // Crisis (~75%)
+      const beat4 = arc.scenes[Math.floor(totalScenes * 0.75)]; // Crisis at 75%
       const beat5 = arc.scenes[totalScenes - 1]; // Resolution
 
       arc.setFiveBeat(beat1, beat2, beat3, beat4, beat5);
@@ -375,7 +375,7 @@ export class ArcPlanner {
     if (!pacing.isBalanced) {
       weaknesses.push('Pacing is unbalanced - some phases are too long or too short');
       suggestions.push(
-        'Consider redistributing scenes: Anchor ~20%, Rise ~40%, Impact ~20%, Descent ~20%'
+        'Consider redistributing scenes: Anchor 20%, Rise 40%, Impact 20%, Descent 20%'
       );
       score -= 10;
     } else {
