@@ -30,13 +30,21 @@ interface Character {
   relationships: Record<string, unknown>[];
 }
 
+interface Stats {
+  sceneCount: number;
+  arcCount: number;
+  characterCount: number;
+  totalCost: number;
+  avgScenePerArc: number;
+}
+
 const API_BASE = 'http://localhost:3000';
 
 export default function App() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [arcs, setArcs] = useState<Arc[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [stats, setStats] = useState<Record<string, unknown> | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [activeTab, setActiveTab] = useState<'scenes' | 'arcs' | 'characters' | 'ledger'>('scenes');
 
   const loadScenes = useCallback(async () => {
