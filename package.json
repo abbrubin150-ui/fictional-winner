@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:ui\"",
-    "dev:api": "ts-node-dev --respawn --transpile-only src/api/server.ts",
+    "dev:api": "npx tsx watch server.ts",
     "dev:ui": "vite",
     "build": "tsc && vite build",
     "test": "jest",
