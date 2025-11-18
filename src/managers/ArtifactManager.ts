@@ -558,12 +558,87 @@ export class ArtifactManager {
 
   /**
    * Get artifacts that need regeneration (source data changed)
-   * This is a placeholder - actual implementation would track graph changes
+   * Compares source entity update timestamps with artifact's last regeneration time
    */
   getOutdatedArtifacts(): Artifact[] {
-    // For now, return empty array
-    // In full implementation, we'd track graph version/timestamp
-    // and compare with artifact's generatedFrom timestamp
-    return [];
+    const outdatedArtifacts: Artifact[] = [];
+
+    for (const artifact of this.artifacts.values()) {
+      // Get the artifact's last regeneration timestamp
+      // Use lastRegeneratedAt if available, otherwise fall back to updatedAt
+      const artifactTimestamp = artifact.metadata.lastRegeneratedAt || artifact.metadata.updatedAt;
+
+      let isOutdated = false;
+
+      // Check if any source scenes were updated after artifact generation
+      if (artifact.source.sceneIds && artifact.source.sceneIds.length > 0) {
+        for (const sceneId of artifact.source.sceneIds) {
+          const scene = this.graph.getScene(sceneId);
+          if (scene && scene.metadata.updatedAt > artifactTimestamp) {
+            isOutdated = true;
+            break;
+          }
+        }
+      }
+
+      // Check if any source arcs were updated after artifact generation
+      if (!isOutdated && artifact.source.arcIds && artifact.source.arcIds.length > 0) {
+        for (const arcId of artifact.source.arcIds) {
+          const arc = this.graph.getArc(arcId);
+          if (arc && arc.metadata.updatedAt > artifactTimestamp) {
+            isOutdated = true;
+            break;
+          }
+        }
+      }
+
+      // Check if any source characters were updated after artifact generation
+      if (!isOutdated && artifact.source.characterIds && artifact.source.characterIds.length > 0) {
+        for (const characterId of artifact.source.characterIds) {
+          const character = this.graph.getCharacter(characterId);
+          if (character && character.metadata.updatedAt > artifactTimestamp) {
+            isOutdated = true;
+            break;
+          }
+        }
+      }
+
+      // If includeAll is true, check all entities in the graph
+      if (!isOutdated && artifact.source.includeAll) {
+        // Check all scenes
+        for (const scene of this.graph.getAllScenes()) {
+          if (scene.metadata.updatedAt > artifactTimestamp) {
+            isOutdated = true;
+            break;
+          }
+        }
+
+        // Check all arcs if not already outdated
+        if (!isOutdated) {
+          for (const arc of this.graph.getAllArcs()) {
+            if (arc.metadata.updatedAt > artifactTimestamp) {
+              isOutdated = true;
+              break;
+            }
+          }
+        }
+
+        // Check all characters if not already outdated
+        if (!isOutdated) {
+          for (const character of this.graph.getAllCharacters()) {
+            if (character.metadata.updatedAt > artifactTimestamp) {
+              isOutdated = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (isOutdated) {
+        outdatedArtifacts.push(artifact);
+      }
+    }
+
+    return outdatedArtifacts;
   }
 }
