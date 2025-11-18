@@ -26,6 +26,10 @@
   ],
   "author": "Role Model a & ∴Auditor",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abbrubin150-ui/fictional-winner.git"
+  },
   "dependencies": {
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
