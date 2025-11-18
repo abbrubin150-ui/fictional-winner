@@ -73,6 +73,8 @@ jobs:
       run: npm ci
 
     - name: Build project
+      env:
+        VITE_BASE_URL: /fictional-winner/
       run: npm run build
 
     - name: Setup Pages
